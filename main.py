@@ -72,7 +72,7 @@ class Botto(commands.TwitchBot):
 					logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
 			else:
 				await message.send(f"Error - {message.author.name}, please enter an accepted outcome ('win', 'loss', 'lose').")
-				logger.error(f"Bet attempt without accepted outcome by {message.author.name}")
+				logger.error(f"Bet attempt with non-accepted outcome by {message.author.name}")
 
 
 bot = Botto()
