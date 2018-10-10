@@ -10,7 +10,7 @@ import logging
 import strawpoll
 from auth import jwt_token, access_token, token, api_token
 
-jwt_token = jwt_token
+#jwt_token = jwt_token
 
 access_token = access_token
 r = requests.get('https://api.twitch.tv/helix/users?login=adure_bot',
@@ -30,6 +30,8 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+## HELPER FUNCTIONS ##
+################################################################################
 def restart_program():
 	python = sys.executable
 	os.execl(python, python, *sys.argv)
@@ -43,6 +45,8 @@ def check_points(channel, user):
 	logger.info(f"{user} has {point_amount} points")
 	return point_amount
 
+################################################################################
+
 with open('./channels.json', 'r+') as channels_file:
 	global channels
 	channels = json.load(channels_file)
@@ -52,13 +56,32 @@ class Botto(commands.TwitchBot):
 	def __init__(self):
 		super().__init__(prefix=['!', '?'], irc_token=token, api_token=api_token, client_id=channel_id, nick='adure_bot', initial_channels=channels)
 
+	#################
+	# ON READY EVENT
+	#################
 	async def event_ready(self):
 		logger.info("Ready!")
 
+	###################
+	# ON MESSAGE EVENT
+	###################
 	async def event_message(self, message):
 		print(f"{message.author.name}: {message.content}")
 		await self.process_commands(message)
 
+	##################
+	# RESTART COMMAND
+	##################
+	@commands.twitch_command(aliases=['restart'])
+	async def restart_command(self, message):
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			logger.info("Restarting...")
+			await message.send("HeyGuys cya")
+			restart_program()
+
+	#######################
+	# OPEN BETTING COMMAND
+	#######################
 	@commands.twitch_command(aliases=['open'])
 	async def open_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
@@ -89,6 +112,9 @@ class Botto(commands.TwitchBot):
 			logger.info(f"Betting open - {message.channel.name}")
 			await message.send("Betting open! Use '!bet <outcome> <wager>' to bet on the game (!howtobet)")
 
+	####################
+	# ENTER BET COMMAND
+	####################
 	@commands.twitch_command(aliases=['bet', 'guess'])
 	async def bet_command(self, message, outcome, wager):
 		bet_channel = message.channel.name
@@ -163,13 +189,6 @@ class Botto(commands.TwitchBot):
 			await message.send(f"{message.author.name}, betting is closed")
 
 
-		@command.twitch_command(aliases=['restart'])
-		async def restart_command(self, message):
-			if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
-				logger.info("Restarting...")
-				await message.send("HeyGuys cya")
-				restart_program()
-
-
+# RUN IT
 bot = Botto()
 bot.run()
