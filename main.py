@@ -61,6 +61,9 @@ class Botto(commands.TwitchBot):
 	#################
 	async def event_ready(self):
 		logger.info("Ready!")
+		ws = self._ws
+		for channel in ws._initial_channels:
+			await ws.send_privmsg(channel, "HeyGuys Hello!")
 
 	###################
 	# ON MESSAGE EVENT
