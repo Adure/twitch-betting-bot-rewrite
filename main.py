@@ -66,7 +66,7 @@ class Botto(commands.TwitchBot):
 		if is_open == 1:
 			if outcome in ['win', 'loss', 'lose']:
 				if wager.isdigit() == True:
-					print("success")
+					print("success!")
 				else:
 					await message.send(f"Error - {message.author.name}, your wager is not a number")
 					logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
