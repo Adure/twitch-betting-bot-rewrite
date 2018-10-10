@@ -69,8 +69,7 @@ class Botto(commands.TwitchBot):
 				with open(betters_file_path, 'w+') as betters_file:
 					bettersDict = {
 						'is_open': 1,
-						'betters': [
-						]
+						'betters': []
 					}
 					betters_file.seek(0)
 					json.dump(bettersDict, betters_file, separators=(',', ': '), indent=4)
@@ -81,8 +80,7 @@ class Botto(commands.TwitchBot):
 				with open(f"./{open_channel}_betters.json", 'w+') as new_betters_file:
 					bettersDict = {
 						'is_open': 1,
-						'betters': [
-						]
+						'betters': []
 					}
 					json.dump(bettersDict, new_betters_file, separators=(',', ': '), indent=4)
 					logger.info(f"Created {open_channel}_betters.json file")
@@ -120,9 +118,9 @@ class Botto(commands.TwitchBot):
 										break
 									else:
 										betDict = {
-										'user': message.author.name,
-										'outcome': outcome,
-										'wager': wager
+											'user': message.author.name,
+											'outcome': outcome,
+											'wager': wager
 										}
 										contents['betters'].append(betDict)
 
@@ -134,9 +132,9 @@ class Botto(commands.TwitchBot):
 										await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 							else:
 								betDict = {
-								'user': message.author.name,
-								'outcome': outcome,
-								'wager': wager
+									'user': message.author.name,
+									'outcome': outcome,
+									'wager': wager
 								}
 								contents['betters'].append(betDict)
 
@@ -146,15 +144,23 @@ class Botto(commands.TwitchBot):
 
 								logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 								await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+
+					# user doesnt have enough points
 					else:
 						logger.error(f"{message.author.name} tried to enter with insufficient points")
 						await message.send(f"{message.author.name}, you do not have enough points")
+				# user tried to enter with non-digit wager
 				else:
-					await message.send(f"Error - {message.author.name}, your wager is not a number")
 					logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
+					await message.send(f"{message.author.name}, your wager is not a number")
+			# user tried to enter with non-accepted outcome
 			else:
-				await message.send(f"Error - {message.author.name}, please enter an accepted outcome ('win', 'loss', 'lose').")
 				logger.error(f"Bet attempt with non-accepted outcome by {message.author.name}")
+				await message.send(f"{message.author.name}, please enter an accepted outcome ('win', 'loss', 'lose').")
+		# user tried to bet while betting was closed
+		else:
+			logger.error(f"{message.author.name} tried to bet while betting is closed")
+			await message.send(f"{message.author.name}, betting is closed")
 
 
 bot = Botto()
