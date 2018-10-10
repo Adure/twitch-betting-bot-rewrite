@@ -112,6 +112,20 @@ class Botto(commands.TwitchBot):
 			logger.info(f"Betting open - {message.channel.name}")
 			await message.send("Betting open! Use '!bet <outcome> <wager>' to bet on the game (!howtobet)")
 
+	########################
+	# CLOSE BETTING COMMAND
+	########################
+	@commands.twitch_command(aliases=['close'])
+	async def close_command(self, message):
+		close_channel = message.channel.name
+		with open(f'./{close_channel}_betters.json', 'r+') as betters_file:
+			contents = json.load(betters_file)
+
+			contents['is_open'] = 0
+			betters_file.seek(0)
+			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
+			betters_file.truncate()
+
 	####################
 	# ENTER BET COMMAND
 	####################
