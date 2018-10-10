@@ -163,5 +163,13 @@ class Botto(commands.TwitchBot):
 			await message.send(f"{message.author.name}, betting is closed")
 
 
+		@command.twitch_command(aliases=['restart'])
+		async def restart_command(self, message):
+			if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+				logger.info("Restarting...")
+				await message.send("HeyGuys cya")
+				restart_program()
+
+
 bot = Botto()
 bot.run()
