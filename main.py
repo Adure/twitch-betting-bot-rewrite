@@ -45,6 +45,15 @@ def check_points(channel, user):
 	logger.info(f"{user} has {point_amount} points")
 	return point_amount
 
+def add_points(channel, user, amount):
+	with open('./channels.json') as channels_file:
+		content = json.load(channels_file)
+		channel = content[channel]['id']
+	r = requests.put(f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}/{amount}',
+	headers = {"Authorization":jwt_token},
+	)
+	logger.info(r.text)
+
 ################################################################################
 
 with open('./channels.json', 'r+') as channels_file:
@@ -129,36 +138,37 @@ class Botto(commands.TwitchBot):
 	########################
 	@commands.twitch_command(aliases=['close'])
 	async def close_command(self, message):
-		close_channel = message.channel.name
-		win_votes = 0
-		loss_votes = 0
-		total_wager = 0
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			close_channel = message.channel.name
+			win_votes = 0
+			loss_votes = 0
+			total_wager = 0
 
-		with open(f'./{close_channel}_betters.json', 'r+') as betters_file:
-			contents = json.load(betters_file)
+			with open(f'./{close_channel}_betters.json', 'r+') as betters_file:
+				contents = json.load(betters_file)
 
-			contents['is_open'] = 0
-			betters_file.seek(0)
-			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
-			betters_file.truncate()
+				contents['is_open'] = 0
+				betters_file.seek(0)
+				json.dump(contents, betters_file, separators=(',', ': '), indent=4)
+				betters_file.truncate()
 
-			logger.info(f"Betting closed - {message.channel.name}")
-			await message.send("Betting closed!")
+				logger.info(f"Betting closed - {message.channel.name}")
+				await message.send("Betting closed!")
 
-		if len(contents['betters']) != 0:
-			for user in contents['betters']:
-				if user['outcome'] == 'win':
-					win_votes += 1
-				else:
-					loss_votes += 1
+			if len(contents['betters']) != 0:
+				for user in contents['betters']:
+					if user['outcome'] == 'win':
+						win_votes += 1
+					else:
+						loss_votes += 1
 
-				total_wager += int(user['wager'])
+					total_wager += int(user['wager'])
 
-			w_percentage = (win_votes / len(contents['betters'])) * 100
-			l_percentage = (loss_votes / len(contents['betters'])) * 100
+				w_percentage = (win_votes / len(contents['betters'])) * 100
+				l_percentage = (loss_votes / len(contents['betters'])) * 100
 
-			logger.info(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
-			await message.send(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
+				logger.info(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
+				await message.send(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
 
 
 	####################
@@ -236,6 +246,83 @@ class Botto(commands.TwitchBot):
 		else:
 			logger.error(f"{message.author.name} tried to bet while betting is closed")
 			await message.send(f"{message.author.name}, betting is closed")
+
+
+	@commands.twitch_command(aliases=['win'])
+	async def win_command(self, message):
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			channel = message.channel.name
+			win_bets = 0
+			points_won = 0
+			points_lost = 0
+			with open(f"{channel}_betters.json") as betters_file:
+				contents = json.load(betters_file)
+
+				is_open = contents['is_open']
+
+				if is_open == 0:
+					logger.info(f"Game won - {channel}")
+					await message.send("Win! PogChamp")
+
+					if len(contents['betters']) != 0:
+						for user in contents['betters']:
+							if user['outcome'] == 'win':
+								win_bets += 1
+								add_points(channel, user['user'], int(user['wager']))
+								points_won += int(user['wager'])
+							else:
+								add_points(channel, user['user'], int(user['wager']) * -1)
+								points_lost += int(user['wager'])
+
+						percentage = (win_bets / len(contents['betters'])) * 100
+
+						logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
+						await message.send(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
+
+					else:
+						logger.info(f"No one has bet - {channel}")
+						await message.send("No one has bet!")
+				else:
+					logger.info(f"Betting is still open - {channel}")
+					await message.send("Betting is still open!")
+
+	@commands.twitch_command(aliases=['loss', 'lose'])
+	async def loss_command(self, message):
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			channel = message.channel.name
+			loss_bets = 0
+			points_won = 0
+			points_lost = 0
+			with open(f"{channel}_betters.json") as betters_file:
+				contents = json.load(betters_file)
+
+				is_open = contents['is_open']
+
+				if is_open == 0:
+					logger.info(f"Game lost - {channel}")
+					await message.send("Loss! BibleThump")
+
+					if len(contents['betters']) != 0:
+						for user in contents['betters']:
+							if user['outcome'] == 'win':
+								add_points(channel, user['user'], int(user['wager']) * -1)
+								points_lost += int(user['wager'])
+							else:
+								loss_bets += 1
+								add_points(channel, user['user'], int(user['wager']))
+								points_won += int(user['wager'])
+
+						percentage = (loss_bets / len(contents['betters'])) * 100
+
+						logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
+						await message.send(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
+
+					else:
+						logger.info(f"No one has bet - {channel}")
+						await message.send("No one has bet!")
+				else:
+					logger.info(f"Betting is still open - {channel}")
+					await message.send("Betting is still open!")
 
 
 
