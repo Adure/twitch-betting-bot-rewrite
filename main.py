@@ -121,6 +121,10 @@ class Botto(commands.TwitchBot):
 	@commands.twitch_command(aliases=['close'])
 	async def close_command(self, message):
 		close_channel = message.channel.name
+		win_votes = 0
+		loss_votes = 0
+		total_wager = 0
+
 		with open(f'./{close_channel}_betters.json', 'r+') as betters_file:
 			contents = json.load(betters_file)
 
@@ -128,6 +132,25 @@ class Botto(commands.TwitchBot):
 			betters_file.seek(0)
 			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
 			betters_file.truncate()
+
+			logger.info(f"Betting closed - {message.channel.name}")
+			await message.send("Betting closed!")
+
+		if len(contents['betters']) != 0:
+			for user in contents['betters']:
+				if user['outcome'] == 'win':
+					win_votes += 1
+				else:
+					loss_votes += 1
+
+				total_wager += int(user['wager'])
+
+			w_percentage = (win_votes / len(contents['betters'])) * 100
+			l_percentage = (loss_votes / len(contents['betters'])) * 100
+
+			logger.info(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
+			await message.send(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
+
 
 	####################
 	# ENTER BET COMMAND
