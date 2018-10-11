@@ -167,8 +167,8 @@ class Botto(commands.TwitchBot):
 				w_percentage = (win_votes / len(contents['betters'])) * 100
 				l_percentage = (loss_votes / len(contents['betters'])) * 100
 
-				logger.info(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
-				await message.send(f"{total_wager} Points bet | {win_votes}({w_percentage}%) voted win | {loss_votes}({l_percentage}%) voted lose")
+				logger.info(f"{total_wager} Points bet | {win_votes}({w_percentage:.1f}%) voted win | {loss_votes}({l_percentage:.1f}%) voted lose")
+				await message.send(f"{total_wager} Points bet | {win_votes}({w_percentage:.1f}%) voted win | {loss_votes}({l_percentage:.1f}%) voted lose")
 
 
 	####################
@@ -177,44 +177,42 @@ class Botto(commands.TwitchBot):
 	@commands.twitch_command(aliases=['bet', 'guess'])
 	async def bet_command(self, message, outcome, wager):
 		bet_channel = message.channel.name
-		with open(f'./{bet_channel}_betters.json') as betters_file:
+		users = []
+		with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
 			contents = json.load(betters_file)
 			is_open = contents['is_open']
 
-		# if the betting has been opened
-		if is_open == 1:
-			# if they entered an accepted outcome
-			if outcome in ['win', 'loss', 'lose']:
-				# if the wager is a number
-				if wager.isdigit() == True:
-					# if they have enough points to make the bet
-					if check_points(bet_channel, message.author.name) >= int(wager):
-						# open betters json file
-						with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
-							contents = json.load(betters_file)
-
+			# if the betting has been opened
+			if is_open == 1:
+				# if they entered an accepted outcome
+				if outcome in ['win', 'loss', 'lose']:
+					# if the wager is a number
+					if wager.isdigit() == True:
+						# if they have enough points to make the bet
+						if check_points(bet_channel, message.author.name) >= int(wager):
 							# if the betters list isnt empty
-							if len(contents['betters']) >= 1:
+							if len(contents['betters']) != 0:
 								for user in contents['betters']:
-									# if the user trying to bet has already entered
-									if user['user'] == message.author.name:
-										logger.error(f"{message.author.name} tried to bet, but they have already entered")
-										await message.send(f"{message.author.name}, you can only bet once")
-										break
-									else:
-										betDict = {
-											'user': message.author.name,
-											'outcome': outcome,
-											'wager': wager
-										}
-										contents['betters'].append(betDict)
+									users.append(user['user'])
+								# if the user trying to bet has already entered
+								if message.author.name in users:
+									logger.error(f"{message.author.name} tried to bet, but they have already entered")
+									await message.send(f"{message.author.name}, you can only bet once")
+								else:
+									betDict = {
+										'user': message.author.name,
+										'outcome': outcome,
+										'wager': wager
+									}
+									contents['betters'].append(betDict)
 
-										betters_file.seek(0)
-										json.dump(contents, betters_file, separators=(',', ': '), indent=4)
-										betters_file.truncate()
+									betters_file.seek(0)
+									json.dump(contents, betters_file, separators=(',', ': '), indent=4)
+									betters_file.truncate()
 
-										logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
-										await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+									logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+									await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+
 							else:
 								betDict = {
 									'user': message.author.name,
@@ -230,26 +228,24 @@ class Botto(commands.TwitchBot):
 								logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 								await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 
-					# user doesnt have enough points
+						# user doesnt have enough points
+						else:
+							logger.error(f"{message.author.name} tried to enter with insufficient points")
+							await message.send(f"{message.author.name}, you do not have enough points")
+
+					# user tried to enter with non-digit wager
 					else:
-						logger.error(f"{message.author.name} tried to enter with insufficient points")
-						await message.send(f"{message.author.name}, you do not have enough points")
-
-				# if user enters with an 'all' wager
-				elif wager == 'all':
-					wager = str(check_points(bet_channel, message.author.name))
-					# open betters json file
-					with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
-						contents = json.load(betters_file)
-
-						# if the betters list isnt empty
-						if len(contents['betters']) >= 1:
-							for user in contents['betters']:
+						#if user enters with an 'all' wager
+						if wager == 'all':
+							wager = str(check_points(bet_channel, message.author.name))
+							# if the betters list isnt empty
+							if len(contents['betters']) != 0:
+								for user in contents['betters']:
+									users.append(user['user'])
 								# if the user trying to bet has already entered
 								if user['user'] == message.author.name:
 									logger.error(f"{message.author.name} tried to bet, but they have already entered")
 									await message.send(f"{message.author.name}, you can only bet once")
-									break
 								else:
 									betDict = {
 										'user': message.author.name,
@@ -264,32 +260,32 @@ class Botto(commands.TwitchBot):
 
 									logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 									await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+
+							else:
+								betDict = {
+									'user': message.author.name,
+									'outcome': outcome,
+									'wager': wager
+								}
+								contents['betters'].append(betDict)
+
+								betters_file.seek(0)
+								json.dump(contents, betters_file, separators=(',', ': '), indent=4)
+								betters_file.truncate()
+
+								logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+								await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 						else:
-							betDict = {
-								'user': message.author.name,
-								'outcome': outcome,
-								'wager': wager
-							}
-							contents['betters'].append(betDict)
-
-							betters_file.seek(0)
-							json.dump(contents, betters_file, separators=(',', ': '), indent=4)
-							betters_file.truncate()
-
-							logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
-							await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
-				# user tried to enter with non-digit wager
+							logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
+							await message.send(f"{message.author.name}, your wager is not a number")
+				# user tried to enter with non-accepted outcome
 				else:
-					logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
-					await message.send(f"{message.author.name}, your wager is not a number")
-			# user tried to enter with non-accepted outcome
+					logger.error(f"Bet attempt with non-accepted outcome by {message.author.name}")
+					await message.send(f"{message.author.name}, please enter an accepted outcome ('win', 'loss', 'lose').")
+			# user tried to bet while betting was closed
 			else:
-				logger.error(f"Bet attempt with non-accepted outcome by {message.author.name}")
-				await message.send(f"{message.author.name}, please enter an accepted outcome ('win', 'loss', 'lose').")
-		# user tried to bet while betting was closed
-		else:
-			logger.error(f"{message.author.name} tried to bet while betting is closed")
-			await message.send(f"{message.author.name}, betting is closed")
+				logger.error(f"{message.author.name} tried to bet while betting is closed")
+				await message.send(f"{message.author.name}, betting is closed")
 
 
 	@commands.twitch_command(aliases=['win'])
