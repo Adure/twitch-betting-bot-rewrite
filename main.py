@@ -234,6 +234,50 @@ class Botto(commands.TwitchBot):
 					else:
 						logger.error(f"{message.author.name} tried to enter with insufficient points")
 						await message.send(f"{message.author.name}, you do not have enough points")
+
+				# if user enters with an 'all' wager
+				elif wager == 'all':
+					str(wager) = check_points(bet_channel, message.author.name)
+					# open betters json file
+					with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
+						contents = json.load(betters_file)
+
+						# if the betters list isnt empty
+						if len(contents['betters']) >= 1:
+							for user in contents['betters']:
+								# if the user trying to bet has already entered
+								if user['user'] == message.author.name:
+									logger.error(f"{message.author.name} tried to bet, but they have already entered")
+									await message.send(f"{message.author.name}, you can only bet once")
+									break
+								else:
+									betDict = {
+										'user': message.author.name,
+										'outcome': outcome,
+										'wager': wager
+									}
+									contents['betters'].append(betDict)
+
+									betters_file.seek(0)
+									json.dump(contents, betters_file, separators=(',', ': '), indent=4)
+									betters_file.truncate()
+
+									logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+									await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+						else:
+							betDict = {
+								'user': message.author.name,
+								'outcome': outcome,
+								'wager': wager
+							}
+							contents['betters'].append(betDict)
+
+							betters_file.seek(0)
+							json.dump(contents, betters_file, separators=(',', ': '), indent=4)
+							betters_file.truncate()
+
+							logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+							await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
 				# user tried to enter with non-digit wager
 				else:
 					logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
