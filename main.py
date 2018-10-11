@@ -237,7 +237,7 @@ class Botto(commands.TwitchBot):
 
 				# if user enters with an 'all' wager
 				elif wager == 'all':
-					str(wager) = check_points(bet_channel, message.author.name)
+					wager = str(check_points(bet_channel, message.author.name))
 					# open betters json file
 					with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
 						contents = json.load(betters_file)
