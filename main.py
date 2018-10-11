@@ -368,6 +368,20 @@ class Botto(commands.TwitchBot):
 					logger.info(f"Betting is still open - {channel}")
 					await message.send("Betting is still open!")
 
+	@commands.twitch_command(aliases=['status'])
+	async def status_command(self, message):
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			channel = message.channel.name
+			with open(f"{channel}_betters.json") as betters_file:
+				contents = json.load(betters_file)
+				is_open = contents['is_open']
+
+				if is_open == 0:
+					logger.info(f"Betting is closed. {str(len(contents['betters']))} betters in list. - {channel}")
+					await message.send(f"Betting is closed. {str(len(contents['betters']))} betters in list.")
+				else:
+					logger.info(f"Betting is open. {str(len(contents['betters']))} betters in list. - {channel}")
+					await message.send(f"Betting is open. {str(len(contents['betters']))} betters in list.")
 
 
 # RUN IT
