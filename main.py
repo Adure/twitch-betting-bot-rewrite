@@ -72,6 +72,15 @@ class Botto(commands.TwitchBot):
 		print(f"{message.author.name}: {message.content}")
 		await self.process_commands(message)
 
+	###################
+	# ON COMMAND ERROR
+	###################
+	async def event_command_error(self, ctx, error):
+		if isinstance(error, commands.TwitchCommandNotFound):
+			pass
+		else:
+			logger.error(f"{error} - {ctx.channel.name}")
+
 	##################
 	# RESTART COMMAND
 	##################
@@ -227,6 +236,7 @@ class Botto(commands.TwitchBot):
 		else:
 			logger.error(f"{message.author.name} tried to bet while betting is closed")
 			await message.send(f"{message.author.name}, betting is closed")
+
 
 
 # RUN IT
