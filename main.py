@@ -10,8 +10,6 @@ import logging
 import strawpoll
 from auth import jwt_token, access_token, token, api_token
 
-#jwt_token = jwt_token
-
 access_token = access_token
 r = requests.get('https://api.twitch.tv/helix/users?login=adure_bot',
 headers={'Authorization':access_token}
@@ -76,7 +74,7 @@ class Botto(commands.TwitchBot):
 	###################
 	async def event_message(self, message):
 		print(f"{message.author.name}: {message.content}")
-		await self.process_commands(message)
+		await self.handle_commands(message)
 
 	###################
 	# ON COMMAND ERROR
