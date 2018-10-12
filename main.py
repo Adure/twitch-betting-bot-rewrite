@@ -238,7 +238,7 @@ class Botto(commands.TwitchBot):
 								for user in contents['betters']:
 									users.append(user['user'])
 								# if the user trying to bet has already entered
-								if user['user'] == message.author.name:
+								if message.author.name in users:
 									logger.error(f"{message.author.name} tried to bet, but they have already entered")
 									await message.send(f"{message.author.name}, you can only bet once")
 								else:
