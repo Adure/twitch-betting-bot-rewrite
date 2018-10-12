@@ -315,6 +315,16 @@ class Botto(commands.TwitchBot):
 					await message.send(f"Betting is open. {str(len(contents['betters']))} betters in list.")
 
 
+	@commands.twitch_command(aliases=['strawpoll'])
+	async def strawpoll_command(self, message, question, *options):
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			api = strawpoll.API()
+			topoll = strawpoll.Poll(question, list(options), multi=False)
+			return_poll = await api.submit_poll(poll=topoll)
+			logger.info(f"Created poll: {return_poll.url} - {message.channel.name}")
+			await message.send(return_poll.url)
+
+
 # RUN IT
 bot = Botto()
 bot.run()
