@@ -46,9 +46,10 @@ def check_points(channel, user):
 def add_points(channel, user, amount):
 	with open('./channels.json') as channels_file:
 		content = json.load(channels_file)
+		token = content[channel]['token']
 		channel = content[channel]['id']
 	r = requests.put(f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}/{amount}',
-	headers = {"Authorization":jwt_token},
+	headers = {"Authorization":token},
 	)
 	logger.info(r.text)
 
