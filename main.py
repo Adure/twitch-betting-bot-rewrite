@@ -325,6 +325,22 @@ class Botto(commands.TwitchBot):
 			logger.info(f"Created poll: {return_poll.url} - {message.channel.name}")
 			await message.send(return_poll.url)
 
+	@commands.twitch_command(aliases=['print'])
+	async def print_command(self, message):
+		channel = message.channel.name
+		form_message = "Betters: "
+		with open(f"{channel}_betters.json") as betters_file:
+			contents = json.load(betters_file)
+			if len(contents['betters']) == 0:
+				await message.send("No betters in list!")
+				logger.warning("No betters in list on print command")
+				return
+			for user in contents['betters']:
+				form_message += f"'{user['user']}: {user['outcome']} {user['wager']}', "
+
+			await message.send(form_message)
+			logger.info(f"Sent print command to {channel} as {form_message}")
+
 
 # RUN IT
 bot = Botto()
