@@ -216,6 +216,7 @@ class Botto(commands.TwitchBot):
 				'wager': wager
 			}
 			contents['betters'].append(betDict)
+			add_points('thebigoce', message.author.name, int(wager) * -1)
 
 			betters_file.seek(0)
 			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
