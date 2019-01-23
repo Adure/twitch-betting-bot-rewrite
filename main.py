@@ -69,6 +69,9 @@ class Botto(commands.TwitchBot):
 	#################
 	async def event_ready(self):
 		logger.info("Ready!")
+		ws =  bot._ws
+		for channel in ws._initial_channels:
+			await ws.send_privmsg(channel, "Hi There HeyGuys")
 
 	###################
 	# ON MESSAGE EVENT
@@ -173,57 +176,58 @@ class Botto(commands.TwitchBot):
 	@commands.twitch_command(aliases=['bet', 'guess'])
 	async def bet_command(self, message, outcome, wager):
 		bet_channel = message.channel.name
+		bettername = message.author.name
+		userpoints = check_points(bet_channel, better)
 		users = []
 		with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
 			contents = json.load(betters_file)
 			is_open = contents['is_open']
 
 			if is_open == 0:
-				logger.error(f"{message.author.name} tried to bet while betting is closed")
-				await message.send(f"{message.author.name}, betting is closed")
+				logger.error(f"{bettername} tried to bet while betting is closed")
+				await message.send(f"{bettername}, betting is closed")
 				return
 
 			if outcome not in ['win', 'loss', 'lose']:
-				logger.error(f"Bet attempt with non-accepted outcome by {message.author.name}")
-				await message.send(f"{message.author.name}, please enter an accepted outcome ('win', 'loss', 'lose').")
+				logger.error(f"Bet attempt with non-accepted outcome by {bettername}")
+				await message.send(f"{bettername}, please enter an accepted outcome ('win', 'loss', 'lose').")
 				return
 
 			if wager == 'all':
-				wager = str(check_points(bet_channel, message.author.name))
+				wager = str(userpoints)
 
 			if wager.isdigit() == False:
-				logger.error(f"Bet attempt with non-digit wager by {message.author.name}")
-				await message.send(f"{message.author.name}, your wager is not a number")
+				logger.error(f"Bet attempt with non-digit wager by {bettername}")
+				await message.send(f"{bettername}, your wager is not a number")
 				return
 
-			if check_points(bet_channel, message.author.name) < int(wager):
-				logger.error(f"{message.author.name} tried to enter with insufficient points")
-				await message.send(f"{message.author.name}, you do not have enough points")
+			if userpoints < int(wager):
+				logger.error(f"{bettername} tried to enter with insufficient points")
+				await message.send(f"{bettername}, you do not have enough points")
 				return
 
 			if len(contents['betters']) != 0:
 				for user in contents['betters']:
 					users.append(user['user'])
 
-				if message.author.name in users:
-					logger.error(f"{message.author.name} tried to bet, but they have already entered")
-					await message.send(f"{message.author.name}, you can only bet once")
+				if bettername in users:
+					logger.error(f"{bettername} tried to bet, but they have already entered")
+					await message.send(f"{bettername}, you can only bet once")
 					return
 
 			betDict = {
-				'user': message.author.name,
+				'user': bettername,
 				'outcome': outcome,
 				'wager': wager
 			}
 			contents['betters'].append(betDict)
-			add_points(bet_channel, message.author.name, int(wager) * -1)
 
 			betters_file.seek(0)
 			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
 			betters_file.truncate()
 
-			logger.info(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
-			await message.send(f"Entered {message.author.name} betting {outcome} with a {wager} Point wager")
+			logger.info(f"Entered {bettername} betting {outcome} with a {wager} Point wager")
+			await message.send(f"Entered {bettername} betting {outcome} with a {wager} Point wager")
 
 	@commands.twitch_command(aliases=['win'])
 	async def win_command(self, message):
