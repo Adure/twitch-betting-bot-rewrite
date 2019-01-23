@@ -69,7 +69,7 @@ class Botto(commands.TwitchBot):
 	#################
 	async def event_ready(self):
 		logger.info("Ready!")
-		ws =  bot._ws
+		ws = bot._ws
 		for channel in ws._initial_channels:
 			await ws.send_privmsg(channel, "Hi There HeyGuys")
 
@@ -96,7 +96,7 @@ class Botto(commands.TwitchBot):
 	async def restart_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			logger.info("Restarting...")
-			await message.send("HeyGuys cya")
+			await message.send("BibleThump cya")
 			restart_program()
 
 	#######################
