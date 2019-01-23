@@ -177,7 +177,7 @@ class Botto(commands.TwitchBot):
 	async def bet_command(self, message, outcome, wager):
 		bet_channel = message.channel.name
 		bettername = message.author.name
-		userpoints = check_points(bet_channel, better)
+		userpoints = check_points(bet_channel, bettername)
 		users = []
 		with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
 			contents = json.load(betters_file)
