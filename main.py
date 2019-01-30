@@ -60,7 +60,7 @@ with open('./channels.json', 'r+') as channels_file:
 	channels = json.load(channels_file)
 	channels = channels['channels']
 
-class Botto(commands.TwitchBot):
+class Botto(commands.Bot):
 	def __init__(self):
 		super().__init__(prefix=['!', '?'], irc_token=token, api_token=api_token, client_id=channel_id, nick='adure_bot', initial_channels=channels)
 
@@ -84,7 +84,7 @@ class Botto(commands.TwitchBot):
 	# ON COMMAND ERROR
 	###################
 	async def event_command_error(self, ctx, error):
-		if isinstance(error, commands.TwitchCommandNotFound):
+		if isinstance(error, commands.CommandNotFound):
 			pass
 		else:
 			logger.error(f"{error} - {ctx.channel.name}")
@@ -92,7 +92,7 @@ class Botto(commands.TwitchBot):
 	##################
 	# RESTART COMMAND
 	##################
-	@commands.twitch_command(aliases=['restart'])
+	@commands.command(aliases=['restart'])
 	async def restart_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			logger.info("Restarting...")
@@ -102,7 +102,7 @@ class Botto(commands.TwitchBot):
 	#######################
 	# OPEN BETTING COMMAND
 	#######################
-	@commands.twitch_command(aliases=['open'])
+	@commands.command(aliases=['open'])
 	async def open_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			open_channel = message.channel.name
@@ -135,7 +135,7 @@ class Botto(commands.TwitchBot):
 	########################
 	# CLOSE BETTING COMMAND
 	########################
-	@commands.twitch_command(aliases=['close'])
+	@commands.command(aliases=['close'])
 	async def close_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			close_channel = message.channel.name
@@ -173,7 +173,7 @@ class Botto(commands.TwitchBot):
 	####################
 	# ENTER BET COMMAND
 	####################
-	@commands.twitch_command(aliases=['bet', 'guess'])
+	@commands.command(aliases=['bet', 'guess'])
 	async def bet_command(self, message, outcome, wager):
 		bet_channel = message.channel.name
 		bettername = message.author.name
@@ -195,6 +195,11 @@ class Botto(commands.TwitchBot):
 
 			if wager == 'all':
 				wager = str(userpoints)
+
+			if re.fullmatch('^\d+\%', wager):
+				pnumber = wager.replace('%', '')
+				wager = (int(pnumber) * userpoints) / 100
+				wager = str(round(wager))
 
 			if wager.isdigit() == False:
 				logger.error(f"Bet attempt with non-digit wager by {bettername}")
@@ -229,7 +234,7 @@ class Botto(commands.TwitchBot):
 			logger.info(f"Entered {bettername} betting {outcome} with a {wager} Point wager")
 			await message.send(f"Entered {bettername} betting {outcome} with a {wager} Point wager")
 
-	@commands.twitch_command(aliases=['win'])
+	@commands.command(aliases=['win'])
 	async def win_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			channel = message.channel.name
@@ -267,7 +272,7 @@ class Botto(commands.TwitchBot):
 					logger.info(f"Betting is still open - {channel}")
 					await message.send("Betting is still open!")
 
-	@commands.twitch_command(aliases=['loss', 'lose'])
+	@commands.command(aliases=['loss', 'lose'])
 	async def loss_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			channel = message.channel.name
@@ -305,7 +310,7 @@ class Botto(commands.TwitchBot):
 					logger.info(f"Betting is still open - {channel}")
 					await message.send("Betting is still open!")
 
-	@commands.twitch_command(aliases=['status'])
+	@commands.command(aliases=['status'])
 	async def status_command(self, message):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			channel = message.channel.name
@@ -321,7 +326,7 @@ class Botto(commands.TwitchBot):
 					await message.send(f"Betting is open. {str(len(contents['betters']))} betters in list.")
 
 
-	@commands.twitch_command(aliases=['strawpoll'])
+	@commands.command(aliases=['strawpoll'])
 	async def strawpoll_command(self, message, question, *options):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
 			api = strawpoll.API()
@@ -330,7 +335,7 @@ class Botto(commands.TwitchBot):
 			logger.info(f"Created poll: {return_poll.url} - {message.channel.name}")
 			await message.send(return_poll.url)
 
-	@commands.twitch_command(aliases=['print'])
+	@commands.command(aliases=['print'])
 	async def print_command(self, message):
 		channel = message.channel.name
 		form_message = "Betters: "
