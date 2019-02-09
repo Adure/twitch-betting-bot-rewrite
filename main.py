@@ -226,6 +226,7 @@ class Botto(commands.Bot):
 				'wager': wager
 			}
 			contents['betters'].append(betDict)
+			add_points(bet_channel, bettername, str(int(wager) * -1))
 
 			betters_file.seek(0)
 			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
@@ -254,10 +255,9 @@ class Botto(commands.Bot):
 						for user in contents['betters']:
 							if user['outcome'] == 'win':
 								win_bets += 1
-								add_points(channel, user['user'], int(user['wager']))
+								add_points(channel, user['user'], int(user['wager']) * 2)
 								points_won += int(user['wager'])
 							else:
-								add_points(channel, user['user'], int(user['wager']) * -1)
 								points_lost += int(user['wager'])
 
 						percentage = (win_bets / len(contents['betters'])) * 100
@@ -291,11 +291,10 @@ class Botto(commands.Bot):
 					if len(contents['betters']) != 0:
 						for user in contents['betters']:
 							if user['outcome'] == 'win':
-								add_points(channel, user['user'], int(user['wager']) * -1)
 								points_lost += int(user['wager'])
 							else:
 								loss_bets += 1
-								add_points(channel, user['user'], int(user['wager']))
+								add_points(channel, user['user'], int(user['wager']) * 2)
 								points_won += int(user['wager'])
 
 						percentage = (loss_bets / len(contents['betters'])) * 100
