@@ -1,5 +1,6 @@
 from twitchio.ext import commands
 import requests
+import aiohttp
 import sys
 import os
 from pathlib import Path
@@ -10,11 +11,13 @@ import logging
 import strawpoll
 from auth import jwt_token, access_token, token, api_token
 
-access_token = access_token
-r = requests.get('https://api.twitch.tv/helix/users?login=adure_bot',
-headers={'Authorization':access_token}
-)
-channel_id = r.json()
+r = requests.get('https://api.twitch.tv/kraken/channel', headers =
+{
+    'Content-Type': 'application/vnd.twitchtv.v5+json',
+    'Client-ID': client_id,
+    'Authorization':access_token
+})
+channel_id = r.json()['_id']
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
@@ -22,7 +25,7 @@ fh = logging.FileHandler('logs.log')
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s')
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s]: %(message)s', '%Y-%m-%d %H:%M:%S')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 logger.addHandler(fh)
@@ -34,24 +37,40 @@ def restart_program():
 	python = sys.executable
 	os.execl(python, python, *sys.argv)
 
-def check_points(channel, user):
+async def check_points(channel, user):
 	with open('./channels.json') as channels_file:
 		content = json.load(channels_file)
 		channel = content[channel]['id']
-	r = requests.get(f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}')
-	point_amount = r.json()["points"]
-	logger.info(f"{user} has {point_amount} points")
-	return point_amount
+	
+	async def fetch(session, url):
+        async with session.get(url) as response:
+            return await response.json()
 
-def add_points(channel, user, amount):
-	with open('./channels.json') as channels_file:
-		content = json.load(channels_file)
-		token = content[channel]['token']
-		channel = content[channel]['id']
-	r = requests.put(f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}/{amount}',
-	headers = {"Authorization":token},
-	)
-	logger.info(r.text)
+    async def main():
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}')
+			point_amount = r["points"]
+            logger.info(f"{user} has {point_amount} points")
+			return point_amount
+    
+    await main()
+
+async def add_points(channel, user, amount):
+    with open('./channels.json') as channels_file:
+        content = json.load(channels_file)
+        token = content[channel]['token']
+        channel = content[channel]['id']
+    
+    async def fetch(session, url):
+        async with session.put(url,headers = {"Authorization":token}) as response:
+            return await response.json()
+
+    async def main():
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}/{amount}')
+            logger.info(r)
+    
+    await main()
 
 ################################################################################
 
