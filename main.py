@@ -9,7 +9,8 @@ import re
 import json
 import logging
 import strawpoll
-from auth import jwt_token, access_token, token, api_token
+import traceback
+from auth import jwt_token, access_token, token, api_token, client_id, webhook_url
 
 r = requests.get('https://api.twitch.tv/kraken/channel', headers =
 {
@@ -53,7 +54,7 @@ async def check_points(channel, user):
 			logger.info(f"{user} has {point_amount} points")
 			return point_amount
 
-	await main()
+	return await main()
 
 async def add_points(channel, user, amount):
 	with open('./channels.json') as channels_file:
@@ -68,6 +69,18 @@ async def add_points(channel, user, amount):
 	async def main():
 		async with aiohttp.ClientSession() as session:
 			r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}/{amount}')
+			logger.info(r)
+
+	await main()
+	
+async def postto_webhook(url):
+	async def fetch(session, url):
+		async with session.post(url,headers = {"Content-Type": "application/json"}, data = {url}) as response:
+			return await response.json()
+
+	async def main():
+		async with aiohttp.ClientSession() as session:
+			r = await fetch(session, webhook_url)
 			logger.info(r)
 
 	await main()
@@ -107,6 +120,7 @@ class Botto(commands.Bot):
 			pass
 		else:
 			logger.error(f"{error} - {ctx.channel.name}")
+			traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 	##################
 	# RESTART COMMAND
@@ -196,7 +210,7 @@ class Botto(commands.Bot):
 	async def bet_command(self, message, outcome, wager):
 		bet_channel = message.channel.name
 		bettername = message.author.name
-		userpoints = check_points(bet_channel, bettername)
+		userpoints = await check_points(bet_channel, bettername)
 		users = []
 		with open(f'./{bet_channel}_betters.json', 'r+') as betters_file:
 			contents = json.load(betters_file)
@@ -245,7 +259,7 @@ class Botto(commands.Bot):
 				'wager': wager
 			}
 			contents['betters'].append(betDict)
-			add_points(bet_channel, bettername, str(int(wager) * -1))
+			await add_points(bet_channel, bettername, str(int(wager) * -1))
 
 			betters_file.seek(0)
 			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
@@ -274,7 +288,7 @@ class Botto(commands.Bot):
 						for user in contents['betters']:
 							if user['outcome'] == 'win':
 								win_bets += 1
-								add_points(channel, user['user'], int(user['wager']) * 2)
+								await add_points(channel, user['user'], int(user['wager']) * 2)
 								points_won += int(user['wager'])
 							else:
 								points_lost += int(user['wager'])
@@ -313,7 +327,7 @@ class Botto(commands.Bot):
 								points_lost += int(user['wager'])
 							else:
 								loss_bets += 1
-								add_points(channel, user['user'], int(user['wager']) * 2)
+								await add_points(channel, user['user'], int(user['wager']) * 2)
 								points_won += int(user['wager'])
 
 						percentage = (loss_bets / len(contents['betters'])) * 100
@@ -368,6 +382,11 @@ class Botto(commands.Bot):
 
 			await message.send(form_message)
 			logger.info(f"Sent print command to {channel} as {form_message}")
+			
+	@commands.command(aliases=['clip'])
+	async def clip_command(self, message, name):
+		clip = await self.create_clip(api_token, message.channel.name)
+		await postto_webhook(clip)
 
 
 # RUN IT
