@@ -294,7 +294,6 @@ class Botto(commands.Bot):
 			points_lost = 0
 			with open(f"{channel}_betters.json") as betters_file:
 				contents = json.load(betters_file)
-
 				is_open = contents['is_open']
 
 				if is_open == 1:
@@ -340,7 +339,6 @@ class Botto(commands.Bot):
 			points_lost = 0
 			with open(f"{channel}_betters.json") as betters_file:
 				contents = json.load(betters_file)
-
 				is_open = contents['is_open']
 
 				if is_open == 1:
@@ -413,7 +411,6 @@ class Botto(commands.Bot):
 				return
 
 			form_message = contents['betters'].join(', ')
-
 			await message.send(form_message)
 			logger.info(f"Sent print command to {channel} as {form_message}")
 
@@ -421,7 +418,6 @@ class Botto(commands.Bot):
 	async def clip_command(self, message, name):
 		clip = await self.create_clip(api_token, message.channel.name)
 		await postto_webhook(clip)
-
 
 # RUN IT
 bot = Botto()
