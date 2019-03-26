@@ -42,7 +42,7 @@ async def check_points(channel, user):
 	with open('./channels.json') as channels_file:
 		content = json.load(channels_file)
 		channel = content[channel]['id']
-	
+
 	async def fetch(session, url):
 		async with session.get(url) as response:
 			return await response.json()
@@ -72,7 +72,7 @@ async def add_points(channel, user, amount):
 			logger.info(r)
 
 	await main()
-	
+
 async def postto_webhook(url):
 	async def fetch(session, url):
 		async with session.post(url,headers = {"Content-Type": "application/json"}, data = {url}) as response:
@@ -293,6 +293,8 @@ class Botto(commands.Bot):
 							else:
 								points_lost += int(user['wager'])
 
+							asyncio.sleep(0.1)
+
 						percentage = (win_bets / len(contents['betters'])) * 100
 
 						logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
@@ -329,6 +331,8 @@ class Botto(commands.Bot):
 								loss_bets += 1
 								await add_points(channel, user['user'], int(user['wager']) * 2)
 								points_won += int(user['wager'])
+
+							asyncio.sleep(0.1)
 
 						percentage = (loss_bets / len(contents['betters'])) * 100
 
@@ -382,7 +386,7 @@ class Botto(commands.Bot):
 
 			await message.send(form_message)
 			logger.info(f"Sent print command to {channel} as {form_message}")
-			
+
 	@commands.command(aliases=['clip'])
 	async def clip_command(self, message, name):
 		clip = await self.create_clip(api_token, message.channel.name)
