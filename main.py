@@ -10,6 +10,7 @@ import json
 import logging
 import strawpoll
 import traceback
+import asyncio
 from auth import jwt_token, access_token, token, api_token, client_id, webhook_url
 
 r = requests.get('https://api.twitch.tv/kraken/channel', headers =
@@ -51,10 +52,26 @@ async def check_points(channel, user):
 		async with aiohttp.ClientSession() as session:
 			r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channel}/{user}')
 			point_amount = r["points"]
-			logger.info(f"{user} has {point_amount} points")
 			return point_amount
 
 	return await main()
+
+async def bulk_add_points(channel, data):
+	with open('./channels.json') as channels_file:
+		content = json.load(channels_file)
+		token = content[channel]['token']
+		channel = content[channel]['id']
+
+	async def fetch(session, url):
+		async with session.put(url, headers = {"Authorization":token}, data=data) as response:
+			return await response.json()
+
+	async def main():
+		async with aiohttp.ClientSession() as session:
+			r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channel}')
+			logger.info(r)
+
+	await main()
 
 async def add_points(channel, user, amount):
 	with open('./channels.json') as channels_file:
@@ -63,7 +80,7 @@ async def add_points(channel, user, amount):
 		channel = content[channel]['id']
 
 	async def fetch(session, url):
-		async with session.put(url,headers = {"Authorization":token}) as response:
+		async with session.put(url, headers = {"Authorization":token}) as response:
 			return await response.json()
 
 	async def main():
@@ -75,7 +92,7 @@ async def add_points(channel, user, amount):
 
 async def postto_webhook(url):
 	async def fetch(session, url):
-		async with session.post(url,headers = {"Content-Type": "application/json"}, data = {url}) as response:
+		async with session.post(url, headers = {"Content-Type": "application/json"}, data = {url}) as response:
 			return await response.json()
 
 	async def main():
@@ -259,7 +276,6 @@ class Botto(commands.Bot):
 				'wager': wager
 			}
 			contents['betters'].append(betDict)
-			await add_points(bet_channel, bettername, str(int(wager) * -1))
 
 			betters_file.seek(0)
 			json.dump(contents, betters_file, separators=(',', ': '), indent=4)
@@ -267,6 +283,7 @@ class Botto(commands.Bot):
 
 			logger.info(f"Entered {bettername} betting {outcome} with a {wager} Point wager")
 			await message.send(f"Entered {bettername} betting {outcome} with a {wager} Point wager")
+			await add_points(bet_channel, bettername, str(int(wager) * -1))
 
 	@commands.command(aliases=['win'])
 	async def win_command(self, message):
@@ -280,32 +297,39 @@ class Botto(commands.Bot):
 
 				is_open = contents['is_open']
 
-				if is_open == 0:
-					logger.info(f"Game won - {channel}")
-					await message.send("Win! PogChamp")
-
-					if len(contents['betters']) != 0:
-						for user in contents['betters']:
-							if user['outcome'] == 'win':
-								win_bets += 1
-								await add_points(channel, user['user'], int(user['wager']) * 2)
-								points_won += int(user['wager'])
-							else:
-								points_lost += int(user['wager'])
-
-							asyncio.sleep(0.1)
-
-						percentage = (win_bets / len(contents['betters'])) * 100
-
-						logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
-						await message.send(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
-
-					else:
-						logger.info(f"No one has bet - {channel}")
-						await message.send("No one has bet!")
-				else:
+				if is_open == 1:
 					logger.info(f"Betting is still open - {channel}")
 					await message.send("Betting is still open!")
+					return
+
+				logger.info(f"Game won - {channel}")
+				await message.send("Win! PogChamp")
+
+				if len(contents['betters']) == 0:
+					logger.info(f"No one has bet - {channel}")
+					await message.send("No one has bet!")
+					return
+
+				winners = {
+					'users': [],
+					'mode': 'add'
+				}
+				for user in contents['betters']:
+					if user['outcome'] == 'win':
+						win_bets += 1
+						points_won += int(user['wager'])
+						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
+					else:
+						points_lost += int(user['wager'])
+
+					asyncio.sleep(0.1)
+
+				print(winners)
+				await bulk_add_points(channel, winners)
+				percentage = (win_bets / len(contents['betters'])) * 100
+
+				logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
+				await message.send(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
 
 	@commands.command(aliases=['loss', 'lose'])
 	async def loss_command(self, message):
@@ -319,32 +343,38 @@ class Botto(commands.Bot):
 
 				is_open = contents['is_open']
 
-				if is_open == 0:
-					logger.info(f"Game lost - {channel}")
-					await message.send("Loss! BibleThump")
-
-					if len(contents['betters']) != 0:
-						for user in contents['betters']:
-							if user['outcome'] == 'win':
-								points_lost += int(user['wager'])
-							else:
-								loss_bets += 1
-								await add_points(channel, user['user'], int(user['wager']) * 2)
-								points_won += int(user['wager'])
-
-							asyncio.sleep(0.1)
-
-						percentage = (loss_bets / len(contents['betters'])) * 100
-
-						logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
-						await message.send(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
-
-					else:
-						logger.info(f"No one has bet - {channel}")
-						await message.send("No one has bet!")
-				else:
+				if is_open == 1:
 					logger.info(f"Betting is still open - {channel}")
 					await message.send("Betting is still open!")
+					return
+
+				logger.info(f"Game won - {channel}")
+				await message.send("Win! PogChamp")
+
+				if len(contents['betters']) == 0:
+					logger.info(f"No one has bet - {channel}")
+					await message.send("No one has bet!")
+					return
+
+				winners = {
+					'users': [],
+					'mode': 'add'
+				}
+				for user in contents['betters']:
+					if user['outcome'] == 'win':
+						points_lost += int(user['wager'])
+					else:
+						loss_bets += 1
+						points_won += int(user['wager'])
+						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
+
+					asyncio.sleep(0.1)
+
+				await bulk_add_points(channel, winners)
+				percentage = (loss_bets / len(contents['betters'])) * 100
+
+				logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
+				await message.send(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
 
 	@commands.command(aliases=['status'])
 	async def status_command(self, message):
@@ -381,8 +411,8 @@ class Botto(commands.Bot):
 				await message.send("No betters in list!")
 				logger.warning("No betters in list on print command")
 				return
-			for user in contents['betters']:
-				form_message += f"'{user['user']}: {user['outcome']} {user['wager']}', "
+
+			form_message = contents['betters'].join(', ')
 
 			await message.send(form_message)
 			logger.info(f"Sent print command to {channel} as {form_message}")
