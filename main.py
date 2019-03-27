@@ -318,7 +318,7 @@ class Botto(commands.Bot):
 						win_bets += 1
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
-						await add_points(channel, user['users'], int(user['wager']) * 2)
+						await add_points(channel, user['user'], int(user['wager']) * 2)
 					else:
 						points_lost += int(user['wager'])
 
