@@ -8,7 +8,6 @@ import random
 import re
 import json
 import logging
-import strawpoll
 import traceback
 import asyncio
 from auth import jwt_token, access_token, token, api_token, client_id, webhook_url
@@ -324,7 +323,7 @@ class Botto(commands.Bot):
 
 					asyncio.sleep(0.1)
 
-				print(winners)
+				"""Issue with StreamElements bulk add api endpoint, can uncomment and remove add_points() when the issue is resolved"""
 				# await bulk_add_points(channel, winners)
 				percentage = (win_bets / len(contents['betters'])) * 100
 
@@ -347,8 +346,8 @@ class Botto(commands.Bot):
 					await message.send("Betting is still open!")
 					return
 
-				logger.info(f"Game won - {channel}")
-				await message.send("Win! PogChamp")
+				logger.info(f"Game lost - {channel}")
+				await message.send("Loss! BibleThump")
 
 				if len(contents['betters']) == 0:
 					logger.info(f"No one has bet - {channel}")
@@ -366,10 +365,11 @@ class Botto(commands.Bot):
 						loss_bets += 1
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
-						await add_points(channel, user['users'], int(user['wager']) * 2)
+						await add_points(channel, user['user'], int(user['wager']) * 2)
 
 					asyncio.sleep(0.1)
 
+				"""Issue with StreamElements bulk add api endpoint, can uncomment and remove add_points() when the issue is resolved"""
 				# await bulk_add_points(channel, winners)
 				percentage = (loss_bets / len(contents['betters'])) * 100
 
@@ -391,28 +391,45 @@ class Botto(commands.Bot):
 					logger.info(f"Betting is open. {str(len(contents['betters']))} betters in list. - {channel}")
 					await message.send(f"Betting is open. {str(len(contents['betters']))} betters in list.")
 
-
+	# Strawpoll create poll api endpoint deprecated :(
 	@commands.command(aliases=['strawpoll'])
 	async def strawpoll_command(self, message, question, *options):
 		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
-			api = strawpoll.API()
-			topoll = strawpoll.Poll(question, list(options), multi=False)
-			return_poll = await api.submit_poll(poll=topoll)
-			logger.info(f"Created poll: {return_poll.url} - {message.channel.name}")
-			await message.send(return_poll.url)
+			topoll = {
+				"title": question,
+				"options": list(options),
+				"multi": False
+			}
+			async def fetch(session, url):
+				async with session.post(url, headers={'Content-Type': 'application/json'}, data=topoll) as response:
+					return await response.json()
+			async def main():
+				async with aiohttp.ClientSession() as session:
+					r = await fetch(session, f'https://www.strawpoll.me/api/v2/polls')
+					print(r)
+
+			return await main()
+
+			url = f"https://www.strawpoll.me/{id}"
+			logger.info(f"Created poll: {url} - {message.channel.name}")
+			await message.send(url)
 
 	@commands.command(aliases=['print'])
 	async def print_command(self, message):
 		channel = message.channel.name
-		form_message = "Betters: "
 		with open(f"{channel}_betters.json") as betters_file:
 			contents = json.load(betters_file)
+
 			if len(contents['betters']) == 0:
 				await message.send("No betters in list!")
 				logger.warning("No betters in list on print command")
 				return
 
-			form_message = contents['betters'].join(', ')
+			betters_print = []
+			for bet in contents['betters']:
+				betters_print.append(f"{bet['user']} {bet['outcome']} {bet['wager']}")
+
+			form_message = ', '.join(betters_print)
 			await message.send(form_message)
 			logger.info(f"Sent print command to {channel} as {form_message}")
 
