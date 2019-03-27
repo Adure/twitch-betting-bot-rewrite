@@ -63,7 +63,7 @@ async def bulk_add_points(channel, data):
 		channel = content[channel]['id']
 
 	async def fetch(session, url):
-		async with session.put(url, headers = {"Authorization":token}, data=data) as response:
+		async with session.put(url, headers = {"Authorization":token, 'Content-Type': 'application/json'}, data=data) as response:
 			return await response.json()
 
 	async def main():
@@ -318,13 +318,14 @@ class Botto(commands.Bot):
 						win_bets += 1
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
+						await add_points(channel, user['users'], int(user['wager']) * 2)
 					else:
 						points_lost += int(user['wager'])
 
 					asyncio.sleep(0.1)
 
 				print(winners)
-				await bulk_add_points(channel, winners)
+				# await bulk_add_points(channel, winners)
 				percentage = (win_bets / len(contents['betters'])) * 100
 
 				logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
@@ -365,10 +366,11 @@ class Botto(commands.Bot):
 						loss_bets += 1
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
+						await add_points(channel, user['users'], int(user['wager']) * 2)
 
 					asyncio.sleep(0.1)
 
-				await bulk_add_points(channel, winners)
+				# await bulk_add_points(channel, winners)
 				percentage = (loss_bets / len(contents['betters'])) * 100
 
 				logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
