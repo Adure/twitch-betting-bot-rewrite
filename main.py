@@ -322,8 +322,6 @@ class Botto(commands.Bot):
 					else:
 						points_lost += int(user['wager'])
 
-					asyncio.sleep(0.1)
-
 				await bulk_add_points(channel, winners)
 				percentage = (win_bets / len(contents['betters'])) * 100
 
@@ -366,8 +364,6 @@ class Botto(commands.Bot):
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
 						# await add_points(channel, user['user'], int(user['wager']) * 2)
-
-					asyncio.sleep(0.1)
 
 				await bulk_add_points(channel, winners)
 				percentage = (loss_bets / len(contents['betters'])) * 100
