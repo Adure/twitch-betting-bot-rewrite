@@ -1,6 +1,7 @@
 from twitchio.ext import commands
 import requests
 import aiohttp
+from aiohttp import FormData
 import sys
 import os
 from pathlib import Path
@@ -10,6 +11,8 @@ import json
 import logging
 import traceback
 import asyncio
+import json
+from flask import Flask, Response, make_response
 from auth import jwt_token, access_token, token, api_token, client_id, webhook_url
 
 r = requests.get('https://api.twitch.tv/kraken/channel', headers =
@@ -59,16 +62,16 @@ async def bulk_add_points(channel, data):
 	with open('./channels.json') as channels_file:
 		content = json.load(channels_file)
 		token = content[channel]['token']
-		channel = content[channel]['id']
+		channelid = content[channel]['id']
+		print(data)
 
 	async def fetch(session, url):
-		async with session.put(url, headers = {"Authorization":token, 'Content-Type': 'application/json'}, data=data) as response:
-			return await response.json()
+		async with session.put(url, headers = {"Authorization": token, "Content-Type": "application/json", "Accept": "application/json"}, json=data) as response:
+			return response
 
 	async def main():
 		async with aiohttp.ClientSession() as session:
-			r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channel}')
-			logger.info(r)
+			r = await fetch(session, f'https://api.streamelements.com/kappa/v2/points/{channelid}')
 
 	await main()
 
@@ -309,22 +312,21 @@ class Botto(commands.Bot):
 					return
 
 				winners = {
-					'users': [],
-					'mode': 'add'
+					"mode": "add",
+					"users": []
 				}
 				for user in contents['betters']:
 					if user['outcome'] == 'win':
 						win_bets += 1
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
-						await add_points(channel, user['user'], int(user['wager']) * 2)
+						# await add_points(channel, user['user'], int(user['wager']) * 2)
 					else:
 						points_lost += int(user['wager'])
 
 					asyncio.sleep(0.1)
 
-				"""Issue with StreamElements bulk add api endpoint, can uncomment and remove add_points() when the issue is resolved"""
-				# await bulk_add_points(channel, winners)
+				await bulk_add_points(channel, winners)
 				percentage = (win_bets / len(contents['betters'])) * 100
 
 				logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
@@ -365,12 +367,11 @@ class Botto(commands.Bot):
 						loss_bets += 1
 						points_won += int(user['wager'])
 						winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
-						await add_points(channel, user['user'], int(user['wager']) * 2)
+						# await add_points(channel, user['user'], int(user['wager']) * 2)
 
 					asyncio.sleep(0.1)
 
-				"""Issue with StreamElements bulk add api endpoint, can uncomment and remove add_points() when the issue is resolved"""
-				# await bulk_add_points(channel, winners)
+				await bulk_add_points(channel, winners)
 				percentage = (loss_bets / len(contents['betters'])) * 100
 
 				logger.info(str("%.2f" % percentage)+f"% of people got it right. {str(points_won)} Points won. {str(points_lost)} Points lost.")
@@ -437,6 +438,11 @@ class Botto(commands.Bot):
 	async def clip_command(self, message, name):
 		clip = await self.create_clip(api_token, message.channel.name)
 		await postto_webhook(clip)
+
+	@commands.command(aliases=['createvote'])
+	async def createvote_command(self, message, question, *options):
+		if message.message.tags['mod'] == 1 or any(message.author.name in s for s in channels):
+			pass
 
 # RUN IT
 bot = Botto()
