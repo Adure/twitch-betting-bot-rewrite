@@ -1,7 +1,6 @@
 from twitchio.ext import commands
 import requests
 import aiohttp
-from aiohttp import FormData
 import sys
 import os
 from pathlib import Path
@@ -12,7 +11,6 @@ import logging
 import traceback
 import asyncio
 import json
-from flask import Flask, Response, make_response
 from auth import jwt_token, access_token, token, api_token, client_id, webhook_url
 
 r = requests.get('https://api.twitch.tv/kraken/channel', headers =
