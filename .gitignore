@@ -1,5 +1,7 @@
 *__pycache__
 *_betters.json
+*_voters.json
 *auth.py
 *channels.json
 *logs.log
+*.idea
