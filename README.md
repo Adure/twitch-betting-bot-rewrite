@@ -4,6 +4,7 @@ Twitch bot which allows viewers to bet points on the outcome of a streamer's cur
 
 ## Commands
 All commands can also be invoked with `?` as a prefix.
+
 | Mod-only | Command                                              | Description |
 | :------: | ---------------------------------------------------- | ----------- |
 | Yes      | `!open`                                              | Opens betting and clears betters list.
