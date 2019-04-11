@@ -1,12 +1,12 @@
 # twitch-betting-bot-rewrite
 
-Twitch bot which allows viewers to bet points on the outcome of a streamer's current game, whether they will win or lose, using StreamElements' loyaly points. You can also create custom votes allowing viewers to bet on the outcome of something in the stream, with an optional wager and custom outcomes.
+Twitch bot which allows viewers to bet points on the outcome of a streamer's current game, whether they will win or lose, using StreamElements' loyalty points. You can also create custom votes allowing viewers to bet on the outcome of something in the stream, with an optional wager and custom outcomes.
 
 ## Commands
 All commands can also be invoked with `?` as a prefix.
 
-| Mod-only | Command                                              | Description |
-| :------: | ---------------------------------------------------- | ----------- |
+Mod&#8209;only|Command&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| Description |
+| :------ | :--------------------------------------------------- | :----------- |
 | Yes      | `!open`                                              | Opens betting and clears betters list.
 | Yes      | `!close`                                             | Closes betting and prints information on number of betters, percent of win bets to loss bets, and amount of points bet.
 | No       | `!bet <outcome> <wager>`                             | Enter your bet and subtract the wager amount from your account.
