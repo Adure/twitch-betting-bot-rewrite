@@ -17,7 +17,7 @@ twitch = requests.get('https://api.twitch.tv/kraken/channel', headers={
     'Client-ID': client_id,
     'Authorization': access_token
 })
-channel_id = twitch.json()['_id']
+channel_id = twitch.json()
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
@@ -261,6 +261,11 @@ class Botto(commands.Bot):
                 await message.send(f"{bettername}, you do not have enough points")
                 return
 
+            if int(wager) > 5000000:
+                logger.error(f"{bettername} wager over 5000000")
+                await message.send(f"{bettername}, max wager is 5000000")
+                return
+
             if len(contents['betters']) != 0:
                 for user in contents['betters']:
                     users.append(user['user'])
@@ -320,7 +325,9 @@ class Botto(commands.Bot):
                         winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
                     else:
                         points_lost += int(user['wager'])
+
                     await asyncio.sleep(0.1)
+
                 await bulk_add_points(channel, winners)
                 percentage = (win_bets / len(contents['betters'])) * 100
 
@@ -362,7 +369,9 @@ class Botto(commands.Bot):
                         loss_bets += 1
                         points_won += int(user['wager'])
                         winners['users'].append({'username': user['user'], 'current': int(user['wager']) * 2})
+
                     await asyncio.sleep(0.1)
+
                 await bulk_add_points(channel, winners)
                 percentage = (loss_bets / len(contents['betters'])) * 100
 
