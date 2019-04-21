@@ -1,4 +1,4 @@
-from auth import access_token, token, api_token, client_id, webhook_url
+from auth import access_token, token, api_token, client_id, webhook_url, database
 from twitchio.ext import commands
 from pathlib import Path
 import traceback
@@ -116,10 +116,11 @@ class Botto(commands.Bot):
     # ON READY EVENT
     #################
     async def event_ready(self):
-        logger.info("Ready!")
-        ws = bot._ws
-        for channel in ws._initial_channels:
-            await ws.send_privmsg(channel, "Hi There HeyGuys")
+        logger.info(f"Logged in as {self.nick}")
+        logger.info(f"Connected to channels:.. {', '.join(self.initial_channels)}")
+        #ws = bot._ws
+        #for channel in ws._initial_channels:
+        #    await ws.send_privmsg(channel, "Hi There HeyGuys")
 
     ###################
     # ON MESSAGE EVENT
@@ -579,8 +580,14 @@ class Botto(commands.Bot):
 
 
 # TODO: integrate postgres database
-#pool = await asyncpg.create_pool(database='postgres', user='postgres')
+async def init_database():
+    pool = await asyncpg.create_pool(database='postgres',
+                                    user=database['user'],
+                                    port=database['port'],
+                                    password=database['password'])
+    logger.info(f"Connected to database... User: {database['user']}, Port: {database['port']}")
 
 # RUN IT
 bot = Botto()
+bot.loop.run_until_complete(init_database())
 bot.run()
