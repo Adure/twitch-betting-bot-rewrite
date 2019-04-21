@@ -1,16 +1,14 @@
+from auth import access_token, token, api_token, client_id, webhook_url
 from twitchio.ext import commands
+from pathlib import Path
+import traceback
 import requests
 import aiohttp
-import sys
-import os
-from pathlib import Path
-import re
-import json
-import logging
-import traceback
+import asyncpg
 import asyncio
+import logging
 import json
-from auth import access_token, token, api_token, client_id, webhook_url
+import re
 
 twitch = requests.get('https://api.twitch.tv/kraken/channel', headers={
     'Content-Type': 'application/vnd.twitchtv.v5+json',
@@ -25,16 +23,11 @@ fh = logging.FileHandler('logs.log')
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(asctime)s] [%(levelname)s]: %(message)s', '%Y-%m-%d %H:%M:%S')
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s]: %(message)s', '%d/%m/%Y %H:%M')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
-
-
-def restart_program():
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
 
 
 async def check_points(channel, user):
@@ -585,6 +578,8 @@ class Botto(commands.Bot):
             await message.send(f"Entered {vote_user} voting {outcome} with a {wager} Point wager")
 
 
+# TODO: integrate postgres database
+#pool = await asyncpg.create_pool(database='postgres', user='postgres')
 
 # RUN IT
 bot = Botto()
